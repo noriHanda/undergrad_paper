@@ -1,0 +1,75 @@
+repo-typst-coins-thesis:
+  type: repository
+  author: Yuku Kotani
+  title: typst-coins-thesis
+  url: https://github.com/yukukotani/typst-coins-thesis
+  date: 2024
+Prosthetic-Hands-Trends:
+  type: article
+  author: ["Mendez, V.", "Iberite, F.", "Shokur, S.", "Micera, S."]
+  title: Current Solutions and Future Trends for Robotic Prosthetic Hands
+  publisher: Annual Review of Control, Robotics, and Autonomous Systems
+  url: https://doi.org/10.1146/annurev-control-071020-104336
+  date: 2021
+Sensors:
+  type: blog
+  title: 【2024年版】力覚センサー メーカー13社一覧
+  publisher: Metoree
+  url: https://metoree.com/categories/force-sensor/
+  date: 2024
+Sensorless-Sensing:
+  type: chapter
+  title: センサレスセンシング
+  author: 斉藤佑貴
+  parent:
+    type: book
+    title: ハプティクスとその応用
+    publisher: シーエムシー出版
+    date: 2022
+Reservoir-Computing:
+  type: book
+  title: リザバーコンピューティング
+  author: ["田中剛平", "中根了昌", "廣瀬明"]
+  publisher: 森北出版
+reservoirpy:
+  type: repository
+  title: "ReservoirPy: An Efficient and User-Friendly Library to Design Echo State Networks"
+  booktitle: Artificial Neural Networks and Machine Learning
+  publisher: Springer International Publishing
+  pages: 494-505
+  author: ["Trouvain, Nathan", "Pedrelli, Luca", " Trung Dinh, Thanh", "Hinaut, Xavier"]
+  year: 2020
+Intrinsic-Plasticity:
+  type: article
+  title: Improving reservoirs using intrinsic plasticity
+  author: ["Schrauwen, Benjamin", "Wardermann, Marion", "Verstraeten, David", "Steil, Jochen J.", "Stroobandt, Dirk"]
+  publisher: Neurocomputing
+  volume: 71
+  number: 7
+  pages: 1159-1171
+  year: 2008
+  doi: https://doi.org/10.1016/j.neucom.2007.12.020
+  url: https://www.sciencedirect.com/science/article/pii/S0925231208000519
+Ridge:
+  type: web
+  title: Ridge Regression
+  publisher: The Pennsylvania State University Department of Statistics Online Programs
+  year: 2018
+  url: https://online.stat.psu.edu/stat857/node/155/
+double-descent:
+  type: report
+  title: "Deep Double Descent: Where Bigger Models and More Data Hurt"
+  author: ["Nakkiran, Preetum", "Kaplun, Gal", "Bansal, Yamini", "Yang, Tristan", "Barak, Boaz", "Sutskever, Ilya"]
+  publisher: CoRR
+  year: 2019
+  url: http://arxiv.org/abs/1912.02292
+FORCE:
+  type: article
+  title: Physical reservoir computing with FORCE learning in a living neuronal culture
+  author: ["Yada, Yuichiro", "Yasuda, Shusaku", "Takahashi, Hirokazu"]
+  publisher: Applied Physics Letters
+  volume: 119
+  number: 17
+  pages: 173701
+  year: 2021
+  month: 10
