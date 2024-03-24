@@ -202,7 +202,7 @@ RCを用いて得られる結果は
 
 === RMSE（平方平均二乗誤差）
 
-モデル出力と目標出力が共に連続地で与えられる時系列予測タスクや、時系列生成タスクの誤差を評価する指標としてRMSEが広く用いられる。\
+モデル出力と目標出力が共に連続値で与えられる時系列予測タスクや、時系列生成タスクの誤差を評価する指標としてRMSEが広く用いられる。\
 
 $ "RMSE" = sqrt(frac(1,T) sum_(n=1)^T norm(upright(bold(d))(n)-accent(upright(bold(y)), hat)(n) )^2_2) $
 
@@ -217,7 +217,7 @@ $ "RMSE" = sqrt(frac(1,T) sum_(n=1)^T norm(upright(bold(d))(n)-accent(upright(bo
 
 == データの前処理
 
-RCを用いた学習をするためにはまずデータを学習に使用しやすい形にする必要がある。今回はサーボ3つの消費電力の時系列変化という特徴量に加えて、サーボそれぞれの初期角度、終了角度、そして設定速度を横並びにすることデータをわかりやすくした。また、最後にラベルとして機能する負荷重量を記載することで、プログラム上で教師ラベルとして扱いやすい形にした。
+RCを用いた学習をするためにはまずデータを学習に使用しやすい形にする必要がある。今回はサーボ3つの消費電力の時系列変化という特徴量に加えて、サーボそれぞれの初期角度、終了角度、そして設定速度を横並びにすることデータをわかりやすくした。また、最後にラベルとして機能する負荷重量を記載することで、プログラム上で教師ラベルとして扱いやすい形にした。プログラム上ではこれを48個のファイルに分け、全データ数を48個とし、そのうち38個を訓練データとして、10個を評価用データとしてして使用している。
 
 #pagebreak(weak: true)
 #figure(image("assets/前処理データ.png"), caption: text("リザバー学習にをさせる際に用いたデータ構造"), kind: table)
@@ -225,55 +225,54 @@ RCを用いた学習をするためにはまずデータを学習に使用しや
 
 == リザバーコンピューティングの各種設定
 
-実はRCにもさまざまな方法が提案されている。Echo State Network (ESN), Liquid State Machine (LSM), FORCEなどが一般的であるが、今回は最もシンプルで実装の簡単なESNを採用することとした。ESNはEcho State Propertyを満たすリザバー層に入力を与え、リードアウトの重みづけを線形回帰を用いて学習させる点から非常にシンプルであるためRCを使用する上で広く使われている。また、今回の実験では reservoirpy という Python のモジュールを用いてRCを実装した。@reservoirpy @FORCE
+実はRCにもさまざまな方法が提案されている。Echo State Network (ESN), Liquid State Machine (LSM), FORCEなどが一般的であるが、今回は最もシンプルで実装の簡単なESNを採用することとした。ESNはEcho State Propertyを満たすリザバー層に入力を与え、リードアウトの重みづけを線形回帰を用いて学習させる点から非常にシンプルであるためRCを使用する上で広く使われている。@FORCE
 
 === リザバー層
 
-リザバー層には Intrinsic Plasticity を用いて調整されたニューラルネットを用いた。 @Intrinsic-Plasticity
-// IPReservoir について調べる
+リザバー層には Leaky Integrator によって構成されたニューラルネットを用いた。リーク率は1、リカレント結合重み行列のスペクトル半径は0.95、活性化関数にはハイパボリックタンジェントを用いた。ノード数は特徴量の数よりも十分に大きい100に設定した。 @Intrinsic-Plasticity
 
-==== 適切なノード数の調査
+// ==== 適切なノード数の調査
 
-リザバー層のノード数は学習の精度とその速度、そして推論フェーズでの速度を決定するため非常に重要なパラメータである。本研究はサーボの消費電力から系にかかっている負荷が推論できるかというコンセプトの実証が本題ではあるが、筋電義手で使用するにあたって十分に少ないノード数で推論できなければ実行スピードがボトルネックとなってしまう。そこで次のような実験を行うことで今回のデータに適切なノード数を調査した。
+// リザバー層のノード数は学習の精度とその速度、そして推論フェーズでの速度を決定するため非常に重要なパラメータである。本研究はサーボの消費電力から系にかかっている負荷が推論できるかというコンセプトの実証が本題ではあるが、筋電義手で使用するにあたって十分に少ないノード数で推論できなければ実行スピードがボトルネックとなってしまう。そこで次のような実験を行うことで今回のデータに適切なノード数を調査した。
 
-===== 実験方法
+// ===== 実験方法
 
-リザバー層のノード数を5から100に変化させた時のRMSEの値を比較した。ただし、48個のデータを8対2の割合で学習用と評価用のデータにランダムに分けてから学習と評価を行うようにしているため、実行ごとに結果が変わってくる。この変化を鑑みて比較するためにそれぞれのノード数で1000回の学習と評価を行い、そのRMSEの平均をとった。このRMSEの平均とリザバー層のノード数との関係が次の図の通りである。
+// リザバー層のノード数を5から100に変化させた時のRMSEの値を比較した。ただし、48個のデータを8対2の割合で学習用と評価用のデータにランダムに分けてから学習と評価を行うようにしているため、実行ごとに結果が変わってくる。この変化を鑑みて比較するためにそれぞれのノード数で1000回の学習と評価を行い、そのRMSEの平均をとった。このRMSEの平均とリザバー層のノード数との関係が次の図の通りである。
 
 
-===== 実験結果
+// ===== 実験結果
 
-#figure(image("assets/node_vs_rmse.png"), caption: text("RMSEの平均のノード数との依存関係"))
-#pagebreak(weak: true)
+// #figure(image("assets/node_vs_rmse.png"), caption: text("RMSEの平均のノード数との依存関係"))
+// #pagebreak(weak: true)
 
-48個のデータを8対2の割合で分けているため学習用のデータは38個である。この図から見て取れる通り、ノード数が38個に近づくにつれてRMSEが急激に増加しており、そこから離れるにつれて減っていることがわかった。この現象はdouble descentと呼ばれている。 @double-descent
+// 48個のデータを8対2の割合で分けているため学習用のデータは38個である。この図から見て取れる通り、ノード数が38個に近づくにつれてRMSEが急激に増加しており、そこから離れるにつれて減っていることがわかった。この現象はdouble descentと呼ばれている。 @double-descent
 
-===== 考察
+// ===== 考察
 
-この実験から、設定すべきノード数は学習用データのデータ長よりも大きくすることがRC学習には適していることがわかった。
+// この実験から、設定すべきノード数は学習用データのデータ長よりも大きくすることがRC学習には適していることがわかった。
 
 === リードアウト層
 
-次にリードアウト層の重みづけの学習方法について説明する。今回はESNを用いるため線形回帰での重みづけ学習を行ったのだが、外れ値の影響を必要以上に大きくすることを避けるためにRidge回帰を用いた。@Ridge
+次にリードアウト層の重みづけの学習方法について説明する。今回はESNを用いるため線形回帰での重みづけ学習を行ったのだが、外れ値の影響を必要以上に大きくすることを避けるためにRidge回帰を用いた。正則化パラメータは $1.0 times 10^(-3)$に設定した。 @Ridge
 
 == 学習結果
 
-以下がリザバー層のノード数を50、Ridge回帰の係数を0.03にして学習を行った結果である。
+以下がこの学習を行った結果である。
 
-#figure(image("assets/training_set_result.png"), caption: text("推論モデルで学習データセットの予測をさせた結果"))
+#figure(align(left, (image("assets/training_set_predictions_rmse_36.05610294846806.png", width: 180%))), caption: text("推論モデルで学習データセットの予測をさせた結果"))
 #pagebreak(weak: true)
-#figure(image("assets/test_set_result.png"), caption: text("推論モデルで評価データセットの予測をさせた結果"))
+#figure(align(left, (image("assets/test_set_predictions_rmse_30.560928118691546.png", width: 180%))), caption: text("推論モデルで評価データセットの予測をさせた結果"))
 #pagebreak(weak: true)
 == 考察
 
-評価用データを用いての評価は正答率20%と低い値となった。しかし、今回の実験では3つのサーボ入力を3次元の入力として与えずに3つの特徴量として与えてしまっていた。このように、入力データの与え方を変えたり、学習させるデータの個数や動きのバリエーションを増やすことで精度の向上が望めると考えられる。
+学習用データを用いての評価並びに評価用データを用いての推論のRMSEはどちらも30を超えるものとなった。また、両者において予測値と実際の値の差が大きいことが見て取れる。これは学習手法自体が不十分なものであることが原因と考えられる。一番の特筆すべき点としては重量なしの学習データと重量50g、そして100gのデータとではデータの数は同じであるにもかかわらず、推論の結果0g付近をほとんど予測できていない点である。これは学習手法に誤りがあったことを示していると考えられる。
 
 #pagebreak(weak: true)
 
 = まとめ
 
-筋電義手の操作性向上に必要となってくる力覚の検知を行う方法として、義手内に搭載されることの多いサーボの消費電力を用いる手法の妥当性について検討した。筋電義手におけるサーボというのは生体における筋肉のように、位置を移動させる能力を持ちながら外力が加えられた際にその大きさに対応する反応を示す。その類似性は日頃の感覚としては誰しもが気づく余地あるものではあるが、今回の研究を通してその対応がとれることが明らかとなった。もちろん今の精度や学習方法のままでは対応できない場面が存在すると考えられるが、センサを増やして特徴量を増やすのではなく、データを増やしたり動きのバリエーションを増やしたりといった単純な作業を進めることでより汎用性の高いモデルが出来上がると考えられる。\
-本研究で実証できたコンセプトを利用して筋電義手の力覚センシングやそれを用いたフィードバック技術の研究を進めていくことで筋電義手制御の基礎的技術が確立され、操作性の良い義手が必要としている人が手頃な価格帯で入手できるようになることを強く願う。
+筋電義手の操作性向上に必要となってくる力覚の検知を行う方法として、義手内に搭載されることの多いサーボの消費電力を用いる手法の妥当性について検討した。筋電義手におけるサーボというのは生体における筋肉のように、位置を移動させる能力を持ちながら外力が加えられた際にその大きさに対応する反応を示す。その類似性は日頃の感覚としては誰しもが気づく余地あるものではある。本研究を通してこの類似性を示すことができるか確認のための実験を重ねたが、有意な類似性を示すには至らなかった。\
+しかし現時点で手法自体が間違っていると結論づけることはできない。データの与え方やリザバーコンピューティングの実装や設定の推敲を重ねることで、本来行いたかった実験の結果を得られる可能性は大いに残っていると考えられる。
 
 #set heading(numbering: none)
 
@@ -289,105 +288,576 @@ RCを用いた学習をするためにはまずデータを学習に使用しや
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import japanize_matplotlib
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import StandardScaler
-from reservoirpy.nodes import IPReservoir, Ridge
-from reservoirpy.observables import rmse
+
+import model
+
+BASE_PATH: str = "data/"
+file_011_name: str = "0g_1_1.csv"
+file_012_name: str = "0g_1_2.csv"
+file_013_name: str = "0g_1_3.csv"
+file_014_name: str = "0g_1_4.csv"
+file_015_name: str = "0g_1_5.csv"
+file_016_name: str = "0g_1_6.csv"
+file_017_name: str = "0g_1_7.csv"
+file_018_name: str = "0g_1_8.csv"
+
+file_021_name: str = "0g_2_1.csv"
+file_022_name: str = "0g_2_2.csv"
+file_023_name: str = "0g_2_3.csv"
+file_024_name: str = "0g_2_4.csv"
+file_025_name: str = "0g_2_5.csv"
+file_026_name: str = "0g_2_6.csv"
+file_027_name: str = "0g_2_7.csv"
+file_028_name: str = "0g_2_8.csv"
+
+file_5011_name: str = "50g_1_1.csv"
+file_5012_name: str = "50g_1_2.csv"
+file_5013_name: str = "50g_1_3.csv"
+file_5014_name: str = "50g_1_4.csv"
+file_5015_name: str = "50g_1_5.csv"
+file_5016_name: str = "50g_1_6.csv"
+file_5017_name: str = "50g_1_7.csv"
+file_5018_name: str = "50g_1_8.csv"
+
+file_5021_name: str = "50g_2_1.csv"
+file_5022_name: str = "50g_2_2.csv"
+file_5023_name: str = "50g_2_3.csv"
+file_5024_name: str = "50g_2_4.csv"
+file_5025_name: str = "50g_2_5.csv"
+file_5026_name: str = "50g_2_6.csv"
+file_5027_name: str = "50g_2_7.csv"
+file_5028_name: str = "50g_2_8.csv"
+
+file_10011_name: str = "100g_1_1.csv"
+file_10012_name: str = "100g_1_2.csv"
+file_10013_name: str = "100g_1_3.csv"
+file_10014_name: str = "100g_1_4.csv"
+file_10015_name: str = "100g_1_5.csv"
+file_10016_name: str = "100g_1_6.csv"
+file_10017_name: str = "100g_1_7.csv"
+file_10018_name: str = "100g_1_8.csv"
+
+file_10021_name: str = "100g_2_1.csv"
+file_10022_name: str = "100g_2_2.csv"
+file_10023_name: str = "100g_2_3.csv"
+file_10024_name: str = "100g_2_4.csv"
+file_10025_name: str = "100g_2_5.csv"
+file_10026_name: str = "100g_2_6.csv"
+file_10027_name: str = "100g_2_7.csv"
+file_10028_name: str = "100g_2_8.csv"
 
 
-# CSVファイルからデータを読み込む
-def load_data(file_path):
-    data = pd.read_csv(file_path)
-    X = data.drop("Load", axis=1).values
-    y = data["Load"].values.reshape(-1, 1)
-    return X, y
+def convert_data_frames_to_numpys(
+    data_frames: list[pd.DataFrame],
+) -> np.ndarray[np.float64]:
+    # あらかじめ空のリストを作成しておく
+    new_data = np.empty(
+        (len(data_frames), data_frames[0].columns.size, data_frames[0].shape[0]),
+        dtype=np.float64,
+    )
+
+    for i in range(len(data_frames)):
+        for j in range(data_frames[i].columns.size):
+            new_data[i][j] = data_frames[i][j].values
+    return new_data
 
 
-# データの読み込み
-X, y = load_data("data/3_servos/curated_data/combined_data.csv")
+def get_merged_matrix(
+    list_of_files: list[str],
+) -> tuple[np.ndarray[np.float64], np.ndarray[np.float64]]:
+    data_frames = [
+        pd.read_csv(BASE_PATH + file, header=None, skiprows=1) for file in list_of_files
+    ]
+    training_frames, testing_frames = train_test_split(data_frames, test_size=0.2)
 
-# データの正規化。これがないと精度が低くなる。
-scaler = StandardScaler()
-X_scaled = scaler.fit_transform(X)
+    train_data_set = convert_data_frames_to_numpys(training_frames)
+    test_data_set = convert_data_frames_to_numpys(testing_frames)
+    return train_data_set, test_data_set
 
-# データをトレーニングセットとテストセットに分割
-X_train, X_test, y_train, y_test = train_test_split(
-    X_scaled, y, test_size=0.2, random_state=42
+
+train_data, test_data = get_merged_matrix(
+    [
+        file_011_name,
+        file_012_name,
+        file_013_name,
+        file_014_name,
+        file_015_name,
+        file_016_name,
+        file_017_name,
+        file_018_name,
+        file_021_name,
+        file_022_name,
+        file_023_name,
+        file_024_name,
+        file_025_name,
+        file_026_name,
+        file_027_name,
+        file_028_name,
+        file_5011_name,
+        file_5012_name,
+        file_5013_name,
+        file_5014_name,
+        file_5015_name,
+        file_5016_name,
+        file_5017_name,
+        file_5018_name,
+        file_5021_name,
+        file_5022_name,
+        file_5023_name,
+        file_5024_name,
+        file_5025_name,
+        file_5026_name,
+        file_5027_name,
+        file_5028_name,
+        file_10011_name,
+        file_10012_name,
+        file_10013_name,
+        file_10014_name,
+        file_10015_name,
+        file_10016_name,
+        file_10017_name,
+        file_10018_name,
+        file_10021_name,
+        file_10022_name,
+        file_10023_name,
+        file_10024_name,
+        file_10025_name,
+        file_10026_name,
+        file_10027_name,
+        file_10028_name,
+    ]
 )
 
-# ESNの設定
-input_dim = X_train.shape[1]
-reservoir = IPReservoir(units=50, input_dim=input_dim)
-readout = Ridge(ridge=3e-1)
-esn = reservoir >> readout
-
-# ESNの学習
-esn.fit(X_train, y_train)
-
-# トレーニングセットでの予測と評価
-y_train_pred = esn.run(X_train)
-train_rmse = rmse(y_train_pred, y_train)
-
-# テストセットでの予測と評価
-y_test_pred = esn.run(X_test)
-test_rmse = rmse(y_test_pred, y_test)
+# Extract the load data from the training set. the last arrays of every set are the repeated load data. pick the first one of the last arrays and make it the load data
+train_load: np.ndarray[np.float64] = np.array(
+    [train_data[i][-1][0] for i in range(len(train_data))], dtype=np.float64
+)
+test_load: np.ndarray[np.float64] = np.array(
+    [test_data[i][-1][0] for i in range(len(test_data))], dtype=np.float64
+)
 
 
-# 許容誤差内であるかどうかをチェックする関数
-def calculate_accuracy(y_true, y_pred, tolerance):
-    correct = np.abs(y_true - y_pred) <= tolerance
-    accuracy = np.mean(correct)
-    return accuracy
+# erase the last arrays of every set to make the training data does not include load data at the end
+# and transpose the data to make it compatible with the ESN model
+train_data = train_data[:, :-1, :].transpose(0, 2, 1)
+test_data = test_data[:, :-1, :].transpose(0, 2, 1)
 
+# Reshape the load data to make it compatible with the RMSE calculation that is for example, (38,) to (38,358)
+train_load_reshaped = np.tile(train_load, (train_data.shape[1], 1)).T.reshape(-1, 1)
+test_load_reshaped = np.tile(test_load, (test_data.shape[1], 1)).T.reshape(-1, 1)
 
-# 許容誤差の設定（例：5グラム）
-tolerance = 5
+# Initialize the ESN model
+input_size = train_data.shape[1]  # Number of data points in each sample
+reservoir_size = 100  # Size of the reservoir
+output_size = 1  # Predicting a single value (Load)
 
-# トレーニングセットの正答率
-train_accuracy = calculate_accuracy(y_train, y_train_pred, tolerance)
+esn = model.ESN(N_u=input_size, N_y=output_size, N_x=reservoir_size)
 
-# テストセットの正答率
-test_accuracy = calculate_accuracy(y_test, y_test_pred, tolerance)
+# Train the ESN model
+esn.train(
+    train_data,
+    train_load,
+    model.Tikhonov(N_x=reservoir_size, N_y=output_size, beta=1e-3),
+)
 
-# 結果の表示
-print("Training RMSE:", train_rmse)
-print("Testing RMSE:", test_rmse)
-print("Training Accuracy:", train_accuracy)
-print("Testing Accuracy:", test_accuracy)
+# Predict using the trained model (for demonstration, use the training data itself)
+train_predictions: np.ndarray[float] = esn.predict(train_data)
 
+# Evaluate the model by computing the mean squared error on the training data
+train_rmse: float = np.sqrt(((train_predictions - train_load_reshaped) ** 2).mean())
 
-# トレーニングセットの予測値と実際の値の散布図
+# Predict using the trained model
+test_predictions: np.ndarray[float] = esn.predict(test_data)
+
+# Evaluate the model by computing the mean squared error on the training data
+test_rmse: float = np.sqrt(((test_predictions - test_load_reshaped) ** 2).mean())
+
+print("Training RMSE: ", train_rmse)
+
+flattened_predictions = test_predictions.flatten()
+
 plt.figure(figsize=(12, 6))
 plt.subplot(1, 2, 1)
-plt.scatter(range(len(y_train)), y_train, label="Actual", alpha=0.6)
-plt.scatter(range(len(y_train)), y_train_pred, label="Predicted", alpha=0.6)
-plt.title("Training Set Predictions")
-plt.xlabel("Sample")
-plt.ylabel("Load")
-plt.legend()
-
-# テストセットの予測値と実際の値の散布図
-plt.subplot(1, 2, 2)
-plt.scatter(range(len(y_test)), y_test, label="Actual", alpha=0.6)
-plt.scatter(range(len(y_test)), y_test_pred, label="Predicted", alpha=0.6)
-plt.title("Test Set Predictions")
-plt.xlabel("Sample")
-plt.ylabel("Load")
+plt.scatter(
+    x=range(len(train_load_reshaped)), y=train_load_reshaped, label="実際の質量", alpha=0.6
+)
+plt.scatter(
+    x=range(len(train_predictions)), y=train_predictions, label="推論値", alpha=0.6
+)
+plt.title("学習データセットでの推論")
+plt.xlabel("試行")
+plt.ylabel("負荷質量・推論値 (g)")
 plt.legend()
 
 plt.tight_layout()
+plt.savefig(f'saved_graphs/training_set_predictions_rmse_{train_rmse}.png')
 plt.show()
 
-# 予測値と実際の値をDataFrameに変換
-train_df = pd.DataFrame(
-    {"Actual": y_train.flatten(), "Predicted": y_train_pred.flatten()}
+print("Test RMSE: ", test_rmse)
+
+plt.figure(figsize=(12, 6))
+plt.subplot(1, 2, 1)
+plt.scatter(
+    x=range(len(test_load_reshaped)), y=test_load_reshaped, label="実際の質量", alpha=0.6
 )
+plt.scatter(
+    x=range(len(test_predictions)), y=test_predictions, label="推論値", alpha=0.6
+)
+plt.title("テストデータセットでの推論")
+plt.xlabel("試行")
+plt.ylabel("負荷質量・推論値 (g)")
+plt.legend()
 
-test_df = pd.DataFrame({"Actual": y_test.flatten(), "Predicted": y_test_pred.flatten()})
+plt.tight_layout()
+plt.savefig(f'saved_graphs/test_set_predictions_rmse_{test_rmse}.png')
+plt.show()
 
-# CSVファイルに出力
-train_df.to_csv("results/training_predictions.csv", index=False)
-test_df.to_csv("results/test_predictions.csv", index=False)
+```
+
+#pagebreak()
+以下にリザバーコンピューティングのモデルを示す。ただし、これは田中，中根，廣瀬（著）「リザバーコンピューティング」（森北出版）内に記載されているコードを一部改変したものであり、本ソースコードの著作権は田中剛平先生に帰属することを明記しておく。
+
+```python
+import numpy as np
+import networkx as nx
+
+
+# 恒等写像
+def identity(x):
+    return x
+
+
+# リザバー
+class Reservoir:
+    # リカレント結合重み行列Wの初期化
+    def __init__(self, N_x, density, rho, activation_func, leaking_rate, seed=0):
+        """
+        param N_x: リザバーのノード数
+        param density: ネットワークの結合密度
+        param rho: リカレント結合重み行列のスペクトル半径
+        param activation_func: ノードの活性化関数
+        param leaking_rate: leaky integratorモデルのリーク率
+        param seed: 乱数の種
+        """
+        self.seed = seed
+        self.W = self.make_connection(N_x, density, rho)
+        self.x = np.zeros(N_x)  # リザバー状態ベクトルの初期化
+        self.activation_func = activation_func
+        self.alpha = leaking_rate
+
+    # リカレント結合重み行列の生成
+    def make_connection(self, N_x, density, rho):
+        # Erdos-Renyiランダムグラフ
+        m = int(N_x * (N_x - 1) * density / 2)  # 総結合数
+        G = nx.gnm_random_graph(N_x, m, self.seed)
+
+        # 行列への変換(結合構造のみ）
+        connection = nx.DiGraph(G)
+        W = np.array(connection)
+
+        # 非ゼロ要素を一様分布に従う乱数として生成
+        rec_scale = 1.0
+        np.random.seed(seed=self.seed)
+        W = W * np.random.uniform(-rec_scale, rec_scale, (N_x, N_x))
+
+        # スペクトル半径の計算
+        eigv_list = np.linalg.eig(W)[0]
+        sp_radius = np.max(np.abs(eigv_list))
+
+        # 指定のスペクトル半径rhoに合わせてスケーリング
+        W *= rho / sp_radius
+
+        return W
+
+    # リザバー状態ベクトルの更新
+    def __call__(self, x_in: np.ndarray):
+        """
+        param x_in: 更新前の状態ベクトル
+        return: 更新後の状態ベクトル
+        """
+        # self.x = self.x.reshape(-1, 1)
+        self.x = (1.0 - self.alpha) * self.x + self.alpha * self.activation_func(
+            np.dot(self.W, self.x)
+            + x_in  # self.x は reservoir のノード数 (N_x) の次元を持つベクトルなので、np.dot(self.W, self.x) は必ず (N_x,) のベクトルになる。
+        )
+        return self.x
+
+    # リザバー状態ベクトルの初期化
+    def reset_reservoir_state(self):
+        self.x *= 0.0
+
+
+# 出力層
+class Output:
+    # 出力結合重み行列の初期化
+    def __init__(self, N_x, N_y, seed=0):
+        """
+        param N_x: リザバーのノード数
+        param N_y: 出力次元
+        param seed: 乱数の種
+        """
+        # 正規分布に従う乱数
+        np.random.seed(seed=seed)
+        self.Wout = np.random.normal(size=(N_y, N_x))
+
+    # 出力結合重み行列による重みづけ
+    def __call__(self, x):
+        """
+        param x: N_x次元のベクトル
+        return: N_y次元のベクトル
+        """
+        return np.dot(self.Wout, x)
+
+    # 学習済みの出力結合重み行列を設定
+    def setweight(self, Wout_opt):
+        self.Wout = Wout_opt
+
+
+# 出力フィードバック
+class Feedback:
+    # フィードバック結合重み行列の初期化
+    def __init__(self, N_y, N_x, fb_scale, seed=0):
+        """
+        param N_y: 出力次元
+        param N_x: リザバーのノード数
+        param fb_scale: フィードバックスケーリング
+        param seed: 乱数の種
+        """
+        # 一様分布に従う乱数
+        np.random.seed(seed=seed)
+        self.Wfb = np.random.uniform(-fb_scale, fb_scale, (N_x, N_y))
+
+    # フィードバック結合重み行列による重みづけ
+    def __call__(self, y):
+        """
+        param y: N_y次元のベクトル
+        return: N_x次元のベクトル
+        """
+        return np.dot(self.Wfb, y)
+
+
+# リッジ回帰（beta=0のときは線形回帰）
+class Tikhonov:
+    def __init__(self, N_x, N_y, beta):
+        """
+        param N_x: リザバーのノード数
+        param N_y: 出力次元
+        param beta: 正則化パラメータ
+        """
+        self.beta = beta
+        self.X_XT = np.zeros((N_x, N_x))
+        self.D_XT = np.zeros((N_y, N_x))
+        self.N_x = N_x
+
+    # 学習用の行列の更新
+    def __call__(self, d, x):
+        d = np.reshape(d, (-1, 1))
+        x = np.reshape(x, (-1, 1))
+        self.X_XT = self.X_XT + np.dot(x, x.T)
+        self.D_XT = self.D_XT + np.dot(d, x.T)
+
+    # Woutの最適解（近似解）の導出
+    def get_Wout_opt(self):
+        X_pseudo_inv = np.linalg.inv(self.X_XT + self.beta * np.identity(self.N_x))
+        Wout_opt = np.dot(self.D_XT, X_pseudo_inv)
+        return Wout_opt
+
+
+# 逐次最小二乗（RLS）法
+class RLS:
+    def __init__(self, N_x, N_y, delta, lam, update):
+        """
+        param N_x: リザバーのノード数
+        param N_y: 出力次元
+        param delta: 行列Pの初期条件の係数（P=delta*I, 0<delta<<1）
+        param lam: 忘却係数 (0<lam<1, 1に近い値)
+        param update: 各時刻での更新繰り返し回数
+        """
+        self.delta = delta
+        self.lam = lam
+        self.update = update
+        self.P = (1.0 / self.delta) * np.eye(N_x, N_x)
+        self.Wout = np.zeros([N_y, N_x])
+
+    # Woutの更新
+    def __call__(self, d, x):
+        x = np.reshape(x, (-1, 1))
+        for i in np.arange(self.update):
+            v = d - np.dot(self.Wout, x)
+            gain = 1 / self.lam * np.dot(self.P, x)
+            gain = gain / (1 + 1 / self.lam * np.dot(np.dot(x.T, self.P), x))
+            self.P = 1 / self.lam * (self.P - np.dot(np.dot(gain, x.T), self.P))
+            self.Wout += np.dot(v, gain.T)
+
+        return self.Wout
+
+
+# エコーステートネットワーク
+class ESN:
+    # 各層の初期化
+    def __init__(
+        self,
+        N_u,
+        N_y,
+        N_x,
+        density=0.05,
+        input_scale=1.0,
+        rho=0.95,
+        activation_func=np.tanh,
+        fb_scale=None,
+        fb_seed=0,
+        noise_level=None,
+        leaking_rate=1.0,
+        output_func=identity,
+        inv_output_func=identity,
+        classification=False,
+        average_window=None,
+    ):
+        """
+        param N_u: 入力次元
+        param N_y: 出力次元
+        param N_x: リザバーのノード数
+        param density: リザバーのネットワーク結合密度
+        param input_scale: 入力スケーリング
+        param rho: リカレント結合重み行列のスペクトル半径
+        param activation_func: リザバーノードの活性化関数
+        param fb_scale: フィードバックスケーリング（default: None）
+        param fb_seed: フィードバック結合重み行列生成に使う乱数の種
+        param leaking_rate: leaky integratorモデルのリーク率
+        param output_func: 出力層の非線形関数（default: 恒等写像）
+        param inv_output_func: output_funcの逆関数
+        param classification: 分類問題の場合はTrue（default: False）
+        param average_window: 分類問題で出力平均する窓幅（default: None）
+        """
+        # self.Input = Input(N_u, N_x, input_scale)
+        self.Reservoir = Reservoir(N_x, density, rho, activation_func, leaking_rate)
+        self.Output = Output(N_x, N_y)
+        self.N_u = N_u
+        self.N_y = N_y
+        self.N_x = N_x
+        self.y_prev = np.zeros(N_y)
+        self.output_func = output_func
+        self.inv_output_func = inv_output_func
+        self.classification = classification
+
+        # 出力層からのリザバーへのフィードバックの有無
+        if fb_scale is None:
+            self.Feedback = None
+        else:
+            self.Feedback = Feedback(N_y, N_x, fb_scale, fb_seed)
+
+        # リザバーの状態更新おけるノイズの有無
+        if noise_level is None:
+            self.noise = None
+        else:
+            np.random.seed(seed=0)
+            self.noise = np.random.uniform(-noise_level, noise_level, (self.N_x, 1))
+
+        # 分類問題か否か
+        if classification:
+            if average_window is None:
+                raise ValueError("Window for time average is not given!")
+            else:
+                self.window = np.zeros((average_window, N_x))
+
+    # バッチ学習
+    def train(self, U, D, optimizer, trans_len=None):
+        """
+        U: 教師データの入力, データ長×N_u
+        D: 教師データの出力, データ長×N_y
+        optimizer: 学習器
+        trans_len: 過渡期の長さ
+        return: 学習前のモデル出力, データ長×N_y
+        """
+        train_len = len(U)
+        if trans_len is None:
+            trans_len = 0
+        Y = []
+
+        # 時間発展
+        for n in range(train_len):
+            for m in range(len(U[1])):  # データ数だけループさせる
+                # x_in = self.Input(U[n])
+                # TODO: x_in の大きさ > リザバーのノード数(N_x) の場合の処理を追加する
+                x_in = np.zeros(self.N_x)
+                x_temp = U[n][m]
+                x_in[: len(U[n][m])] = x_temp
+
+                # フィードバック結合
+                if self.Feedback is not None:
+                    x_back = self.Feedback(self.y_prev)
+                    x_in = x_in + x_back
+
+                # ノイズ
+                if self.noise is not None:
+                    x_in += self.noise
+
+                # リザバー状態ベクトル
+                x = self.Reservoir(x_in)
+
+                # 分類問題の場合は窓幅分の平均を取得
+                if self.classification:
+                    self.window = np.append(self.window, x.reshape(1, -1), axis=0)
+                    self.window = np.delete(self.window, 0, 0)
+                    x = np.average(self.window, axis=0)
+
+                # 目標値
+                d = D[n]
+                d = self.inv_output_func(d)
+
+                # 学習器
+                if n > trans_len:  # 過渡期を過ぎたら
+                    optimizer(d, x)
+
+                # 学習前のモデル出力
+                y = self.Output(x)
+                Y.append(self.output_func(y))
+                self.y_prev = d
+
+        # 学習済みの出力結合重み行列を設定
+        self.Output.setweight(optimizer.get_Wout_opt())
+
+        # モデル出力（学習前）
+        return np.array(Y)
+
+    # バッチ学習後の予測
+    def predict(self, U):
+        test_len = len(U)
+        Y_pred = []
+
+        # 時間発展
+        for n in range(test_len):
+            for m in range(len(U[1])):  # データ数だけループさせる
+                # x_in = self.Input(U[n])
+                # TODO: x_in の大きさ > リザバーのノード数(N_x) の場合の処理を追加する
+                x_in = np.zeros(self.N_x)
+                x_temp = U[n][m]
+                x_in[: len(U[n][m])] = x_temp
+
+                # フィードバック結合
+                if self.Feedback is not None:
+                    x_back = self.Feedback(self.y_prev)
+                    x_in += x_back
+
+                # リザバー状態ベクトル
+                x = self.Reservoir(x_in)
+
+                # 分類問題の場合は窓幅分の平均を取得
+                if self.classification:
+                    self.window = np.append(self.window, x.reshape(1, -1), axis=0)
+                    self.window = np.delete(self.window, 0, 0)
+                    x = np.average(self.window, axis=0)
+
+                # 学習後のモデル出力
+                y_pred = self.Output(x)
+                Y_pred.append(self.output_func(y_pred))
+                self.y_prev = y_pred
+
+        # モデル出力（学習後）
+        return np.array(Y_pred)
+
 ```
 
 #[
